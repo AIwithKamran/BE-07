@@ -30,3 +30,42 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 def server_start():
     return {"name": "Task API", "Version": '1.0', 'endpoints':['/tasks']}
 
+@app.get("/tasks", summary="List all tasks")
+def read_tasks():
+    return tasks
+
+@app.get("/health")
+def health():
+    return {'status':'ok'}
+
+@app.post('/tasks', status_code=201, summary='Adding Task')
+def add_task(task:Task):
+    global next_id
+    new_task = {'id':next_id, 'title': task.title, 'done':False}
+    tasks.append(new_task)
+    next_id += 1
+    return new_task
+
+@app.get('/tasks/{task_id}', summary="Get One Task Data")
+def read_one(task_id:int):
+    for t in tasks:
+        if t['id'] == task_id:
+            return t
+    raise HTTPException(status_code=404, detail="Task not found")
+
+@app.put('/tasks/{task_id}', summary="Update Task Data")
+def update_task(task_id:int, updated_task:TaskUpdate):
+    for t in tasks:
+        if t['id'] == task_id:
+            t['title'] =  updated_task.title
+            t['done'] = updated_task.done
+            return t
+    raise HTTPException(status_code=404, detail="Task not Found")
+
+@app.delete("/tasks/{task_id}", summary="Delete Task")
+def del_task(task_id:int):
+    for t in tasks:
+        if t['id'] == task_id:
+            tasks.remove(t)
+            return Response(status_code=204)
+    raise HTTPException(status_code=404, detail="Task not found.")
