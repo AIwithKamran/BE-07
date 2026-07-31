@@ -1,8 +1,48 @@
+import sqlite3
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException 
+
+
+DB_FILE = 'tasks.db'
+
+def get_connection():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_connection()
+    cur = conn.cursor()
+    
+    cur.execute("""
+                    CREATE TABLE IF NOT EXISTS tasks (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        title TEXT NOT NULL,
+                        done BOOLEAN NOT NULL DEFAULT 0
+                     )
+                """)
+    
+    cur.execute("SELECT COUNT(*) FROM tasks")
+    count = cur.fetchone()[0]
+    if count == 0:
+        example_task = {
+            ("Buy groceries", 0),
+            ("Finish assignment", 0),
+            ("Walk the dog", 1),
+        }
+        
+        cur.executemany('INSERT INTO tasks (title, done) VALUES (?, ?)',
+                        example_task)
+        
+    conn.commit()
+    conn.close()
+        
+init_db()
+
+
 
 class Task(BaseModel):
     title: str = Field(min_length=1)
