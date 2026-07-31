@@ -72,7 +72,12 @@ def server_start():
 
 @app.get("/tasks", summary="List all tasks")
 def read_tasks():
-    return tasks
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks")
+    rows = cur.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
 
 @app.get("/health")
 def health():
@@ -88,9 +93,13 @@ def add_task(task:Task):
 
 @app.get('/tasks/{task_id}', summary="Get One Task Data")
 def read_one(task_id:int):
-    for t in tasks:
-        if t['id'] == task_id:
-            return t
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks where id = ?", (task_id,))
+    row = cur.fetchone()
+    conn.close()
+    if row:
+        return dict(row)
     raise HTTPException(status_code=404, detail="Task not found")
 
 @app.put('/tasks/{task_id}', summary="Update Task Data")
