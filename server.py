@@ -85,11 +85,14 @@ def health():
 
 @app.post('/tasks', status_code=201, summary='Adding Task')
 def add_task(task:Task):
-    global next_id
-    new_task = {'id':next_id, 'title': task.title, 'done':False}
-    tasks.append(new_task)
-    next_id += 1
-    return new_task
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (task.title, False))
+    conn.commit()
+    new_id = cur.lastrowid
+    conn.close()
+    return {"id" : new_id, "title": task.title, "done":False}
+
 
 @app.get('/tasks/{task_id}', summary="Get One Task Data")
 def read_one(task_id:int):
