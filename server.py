@@ -107,17 +107,32 @@ def read_one(task_id:int):
 
 @app.put('/tasks/{task_id}', summary="Update Task Data")
 def update_task(task_id:int, updated_task:TaskUpdate):
-    for t in tasks:
-        if t['id'] == task_id:
-            t['title'] =  updated_task.title
-            t['done'] = updated_task.done
-            return t
-    raise HTTPException(status_code=404, detail="Task not Found")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks where id = ?", (task_id,))
+    row = cur.fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Task not found.")
+    cur.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?",
+                (updated_task.title, updated_task.done, task_id))
+    conn.commit()
+    conn.close()
+    
+    return {"id": task_id, "title": updated_task.title, "done": updated_task.done}
 
 @app.delete("/tasks/{task_id}", summary="Delete Task")
 def del_task(task_id:int):
-    for t in tasks:
-        if t['id'] == task_id:
-            tasks.remove(t)
-            return Response(status_code=204)
-    raise HTTPException(status_code=404, detail="Task not found.")
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM tasks WHERE id = ?", (task_id, ))
+    row = cur.fetchone()
+    if row is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Task Not Found")
+    
+    cur.execute("DELETE FROM tasks WHERE id = ?", (task_id, ))
+    conn.commit()
+    conn.close()
+    
+    return Response(status_code=204)
