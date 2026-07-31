@@ -53,10 +53,6 @@ class TaskUpdate(BaseModel):
 
 app = FastAPI()
 
-next_id = 1
-tasks = [
-    {"id":next_id, 'title' : 'Kamran Khan', 'done' : False}
-]
 
 @app.exception_handler(RequestValidationError)
 async def validatin_handler(request:Request, exc : RequestValidationError):
